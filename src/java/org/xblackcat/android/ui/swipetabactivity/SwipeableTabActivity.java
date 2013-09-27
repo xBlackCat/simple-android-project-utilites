@@ -1,0 +1,145 @@
+package org.xblackcat.android.ui.swipetabactivity;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.view.ViewPager;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TabHost;
+import android.widget.TabWidget;
+import org.xblackcat.android.R;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * 27.09.13 15:23
+ *
+ * @author xBlackCat
+ */
+public class SwipeableTabActivity extends FragmentActivity {
+    protected final Map<String, TabHost.OnTabChangeListener> tabListeners = new HashMap<>();
+    protected EnablableViewPager mViewPager;
+    protected TabHost mTabHost;
+    protected TabsAdapter mTabsAdapter;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        mTabHost = (TabHost) findViewById(android.R.id.tabhost);
+        mTabHost.setup();
+
+        mViewPager = (EnablableViewPager) findViewById(R.id.realtabcontent);
+        mViewPager.setOffscreenPageLimit(3);
+
+        mTabsAdapter = new TabsAdapter(getSupportFragmentManager());
+
+        mViewPager.setOnPageChangeListener(
+                new ViewPager.SimpleOnPageChangeListener() {
+                    @Override
+                    public void onPageSelected(int position) {
+                        // Unfortunately when TabHost changes the current tab, it kindly
+                        // also takes care of putting focus on it when not in touch mode.
+                        // The jerk.
+                        // This hack tries to prevent this from pulling focus out of our
+                        // ViewPager.
+                        TabWidget widget = mTabHost.getTabWidget();
+                        assert widget != null;
+                        int oldFocusability = widget.getDescendantFocusability();
+                        widget.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+                        mTabHost.setCurrentTab(mTabsAdapter.visibleToAbsPosition(position));
+                        widget.setDescendantFocusability(oldFocusability);
+                    }
+                }
+        );
+        mViewPager.setAdapter(mTabsAdapter);
+
+        mTabHost.setOnTabChangedListener(
+                new TabHost.OnTabChangeListener() {
+                    @Override
+                    public void onTabChanged(String tabId) {
+                        int position = mTabsAdapter.visiblePositionForTag(tabId);
+                        mViewPager.setCurrentItem(position);
+                        mTabsAdapter.fireOnShow(tabId);
+
+                        TabHost.OnTabChangeListener l = tabListeners.get(tabId);
+                        if (l != null) {
+                            l.onTabChanged(tabId);
+                        }
+                    }
+                }
+        );
+    }
+
+    public void setOnTabChangeListener(String tag, TabHost.OnTabChangeListener listener) {
+        if (listener != null) {
+            tabListeners.put(tag, listener);
+        } else {
+            tabListeners.remove(tag);
+        }
+    }
+
+    public void setSwipeEnabled(boolean swipeEnabled) {
+        this.mViewPager.setSwipeEnabled(swipeEnabled);
+    }
+
+    public void setCurrentTabByTag(String tag) {
+        mTabHost.setCurrentTabByTag(tag);
+    }
+
+    public void setTabEnabled(String tag, boolean enabled) {
+        TabWidget widget = mTabHost.getTabWidget();
+        assert widget != null;
+        View childTabViewAt = widget.getChildTabViewAt(mTabsAdapter.positionForTag(tag));
+        assert childTabViewAt != null;
+        childTabViewAt.setEnabled(enabled);
+        mTabsAdapter.setEnabled(tag, enabled);
+    }
+
+    public void setTabEnabled(int pos, boolean enabled) {
+        TabWidget widget = mTabHost.getTabWidget();
+        assert widget != null;
+        View childTabViewAt = widget.getChildTabViewAt(pos);
+        assert childTabViewAt != null;
+        mTabsAdapter.setEnabled(pos, enabled);
+    }
+
+    protected void setCurrentTab(int currentTab) {
+        mTabHost.setCurrentTab(currentTab);
+    }
+
+    protected int clearAllTabs() {
+        int currentTab = mTabHost.getCurrentTab();
+        mTabHost.setCurrentTab(0);
+        mTabHost.clearAllTabs();
+        mTabsAdapter.clearAllTabs();
+        return currentTab;
+    }
+
+    public void addTab(String tag, View label, View view, Runnable onShow) {
+        mTabsAdapter.addTab(tag, view, onShow);
+
+        TabHost.TabSpec tab = mTabHost.newTabSpec(tag);
+        tab.setIndicator(label);
+        tab.setContent(new DummyTabFactory(this));
+        mTabHost.addTab(tab);
+    }
+
+    private static class DummyTabFactory implements TabHost.TabContentFactory {
+        private final Context mContext;
+
+        public DummyTabFactory(Context context) {
+            mContext = context;
+        }
+
+        @Override
+        public View createTabContent(String tag) {
+            View v = new View(mContext);
+            v.setMinimumWidth(0);
+            v.setMinimumHeight(0);
+            return v;
+        }
+    }
+}

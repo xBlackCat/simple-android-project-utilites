@@ -6,5 +6,5 @@ package org.xblackcat.android.ui.list;
  * @author xBlackCat
  */
 public interface IItemSettable<T> {
-    void setItem(T item);
+    void setItem(int position, T item);
 }

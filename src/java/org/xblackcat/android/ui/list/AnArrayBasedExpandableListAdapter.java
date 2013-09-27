@@ -89,7 +89,7 @@ public abstract class AnArrayBasedExpandableListAdapter<G, C, GI extends IItemGr
             view = buildGroupView(group, parent);
         }
 
-        view.setItem(getGroup(group));
+        view.setItem(group, getGroup(group));
 
         return view;
     }
@@ -116,7 +116,7 @@ public abstract class AnArrayBasedExpandableListAdapter<G, C, GI extends IItemGr
                 view.setBackgroundResource((child % 2 == 0) ? rowBackground : oddRowBackground);
             }
         }
-        view.setItem(getChild(group, child));
+        view.setItem(child, getChild(group, child));
         return view;
     }
 

@@ -338,7 +338,7 @@ public abstract class APullToRefreshComponent<C extends View> extends LinearLayo
 
     private boolean isPullingDownToRefresh() {
         return canPullDownToRefresh && state != REFRESHING && isIncremental()
-                 && isAbleToPushToRefresh();
+                && isAbleToPushToRefresh();
     }
 
     protected abstract boolean isAbleToPushToRefresh();

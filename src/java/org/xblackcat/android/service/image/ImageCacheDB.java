@@ -6,17 +6,23 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import java.util.Iterator;
+
 /**
  * 06.09.12 15:03
  *
  * @author xBlackCat
  */
-class ImageCacheDB extends SQLiteOpenHelper {
+public class ImageCacheDB extends SQLiteOpenHelper {
     private static int DB_VERSION = 1;
     private static String DB_NAME = "image_cache.db";
 
     public ImageCacheDB(Context context) {
         super(context, DB_NAME, null, DB_VERSION);
+    }
+
+    public static void drop(Context context) {
+        context.deleteDatabase(DB_NAME);
     }
 
     @Override
@@ -30,6 +36,7 @@ class ImageCacheDB extends SQLiteOpenHelper {
 
     public synchronized String getImageFileName(String url) {
         SQLiteDatabase db = getReadableDatabase();
+        assert db != null;
         try {
             Cursor cursor = db.query(
                     "imagemetadata",
@@ -60,8 +67,9 @@ class ImageCacheDB extends SQLiteOpenHelper {
         values.put("url", url);
         values.put("filename", fileName);
         SQLiteDatabase db = getWritableDatabase();
+        assert db != null;
         try {
-            db.insert("imagemetadata", null, values);
+            db.replace("imagemetadata", null, values);
         } finally {
             db.close();
         }
@@ -69,6 +77,7 @@ class ImageCacheDB extends SQLiteOpenHelper {
 
     public void removeImage(String url) {
         SQLiteDatabase db = getWritableDatabase();
+        assert db != null;
         try {
             int cursor = db.delete(
                     "imagemetadata",
@@ -77,6 +86,57 @@ class ImageCacheDB extends SQLiteOpenHelper {
             );
         } finally {
             db.close();
+        }
+    }
+
+    public Iterable<String> getImageFileNames() {
+        final SQLiteDatabase db = getReadableDatabase();
+        assert db != null;
+
+        return new Iterable<String>() {
+            @Override
+            public Iterator<String> iterator() {
+                return new CursorIterator(db);
+            }
+        };
+    }
+
+    private static class CursorIterator implements Iterator<String> {
+        private final Cursor cursor;
+        private final SQLiteDatabase db;
+
+        public CursorIterator(SQLiteDatabase db) {
+            this.db = db;
+            cursor = db.query(
+                    "imagemetadata",
+                    new String[]{"filename"},
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+            );
+
+        }
+
+        @Override
+        public boolean hasNext() {
+            final boolean hasNext = cursor.moveToNext();
+            if (!hasNext) {
+                cursor.close();
+                db.close();
+            }
+            return hasNext;
+        }
+
+        @Override
+        public String next() {
+            return cursor.getString(0);
+        }
+
+        @Override
+        public void remove() {
+
         }
     }
 }

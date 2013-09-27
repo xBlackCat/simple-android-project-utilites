@@ -78,7 +78,7 @@ public abstract class AnArrayBasedAdapter<T, V extends View & IItemSettable<T>> 
             }
         }
 
-        view.setItem(getItem(position));
+        view.setItem(position, getItem(position));
         view.setEnabled(isEnabled(position));
         return view;
     }

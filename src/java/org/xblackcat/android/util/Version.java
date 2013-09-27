@@ -1,5 +1,6 @@
 package org.xblackcat.android.util;
 
+import java.io.Serializable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -8,7 +9,7 @@ import java.util.regex.Pattern;
  *
  * @author xBlackCat
  */
-public class Version implements Comparable<Version> {
+public class Version implements Comparable<Version>, Serializable {
     private static final Pattern EXTRACT_DIGITS = Pattern.compile(".*?(\\d+).*");
 
     private final int[] version;

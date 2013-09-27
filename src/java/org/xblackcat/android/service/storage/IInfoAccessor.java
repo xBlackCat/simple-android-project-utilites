@@ -7,10 +7,10 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
-* 28.08.12 16:46
-*
-* @author xBlackCat
-*/
+ * 28.08.12 16:46
+ *
+ * @author xBlackCat
+ */
 public interface IInfoAccessor<T extends Serializable> {
     T load(ContextWrapper ctx) throws IOException;
 

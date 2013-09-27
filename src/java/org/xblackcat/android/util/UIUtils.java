@@ -121,13 +121,7 @@ public class UIUtils {
     }
 
     public static View buildProgressView(Context context, ProgressBarStyle progressBarStyle) {
-        ProgressBar progressBar = new ProgressBar(
-                context,
-                null,
-                progressBarStyle == null ? 0 : progressBarStyle.styleResId
-        );
-        progressBar.setIndeterminate(true);
-        progressBar.setBackgroundDrawable(null);
+        ProgressBar progressBar = buildWaitingProgressBar(context, progressBarStyle);
 
         RelativeLayout prFr = new RelativeLayout(context);
         prFr.setGravity(Gravity.CENTER);
@@ -141,24 +135,49 @@ public class UIUtils {
         return prFr;
     }
 
+    public static ProgressBar buildWaitingProgressBar(Context context) {
+        return buildWaitingProgressBar(context, null);
+    }
+
+    public static ProgressBar buildWaitingProgressBar(Context context, ProgressBarStyle progressBarStyle) {
+        ProgressBar progressBar = new ProgressBar(
+                context,
+                null,
+                progressBarStyle == null ? 0 : progressBarStyle.styleResId
+        );
+        progressBar.setIndeterminate(true);
+        progressBar.setBackgroundDrawable(null);
+        return progressBar;
+    }
+
     public static String getDensityString(Context ctx) {
-        String density;
+        return getDensity(ctx).getAbbr();
+    }
+
+    public static Density getDensity(Context ctx) {
+        Density density;
         switch (ctx.getResources().getDisplayMetrics().densityDpi) {
             case 120: // ldpi
-                density = "mdpi";
+                density = Density.Low;
                 break;
-            default:
             case 160: // mdpi
-                density = "mdpi";
+            default:
+                density = Density.Medium;
+                break;
+            case 213: // TV
+                density = Density.TV;
                 break;
             case 240: // hdpi
-                density = "hdpi";
+                density = Density.High;
                 break;
             case 320: // xhdpi
-                density = "xhdpi";
+                density = Density.XHigh;
                 break;
             case 480: // xxhdpi
-                density = "xxhdpi";
+                density = Density.XXHigh;
+                break;
+            case 640: // xxhdpi
+                density = Density.XXXHigh;
                 break;
         }
         return density;

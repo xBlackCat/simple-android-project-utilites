@@ -87,9 +87,8 @@ public class Remain {
                 minutes,
                 seconds
         ).toUpperCase();
-        SpannableString coloredString = new SpannableString(
-                string
-        );
+
+        SpannableString coloredString = new SpannableString(string);
 
 
         Matcher m = COUNTER_PATTERN.matcher(string);

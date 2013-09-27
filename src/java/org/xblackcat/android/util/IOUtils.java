@@ -203,4 +203,16 @@ public final class IOUtils {
 
         return -1;
     }
+
+    public static String convertMicrosecondsToDuration(long milliseconds) {
+        //because api<9 http://stackoverflow.com/a/625624/1788598
+        milliseconds /= 1000;
+        int seconds = (int) (milliseconds % 60);
+        milliseconds /= 60;
+        int minutes = (int) (milliseconds % 60);
+        milliseconds /= 60;
+        int hours = (int) (milliseconds % 24);
+
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+    }
 }
