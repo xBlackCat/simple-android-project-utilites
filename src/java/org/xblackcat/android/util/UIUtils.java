@@ -24,6 +24,7 @@ import org.xblackcat.android.R;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -154,33 +155,40 @@ public class UIUtils {
         return getDensity(ctx).getAbbr();
     }
 
+    public static Density findNearestDensity(Set<Density> set, Density targetDensity) {
+        int deltaOffset = 1;
+        int offset = targetDensity.ordinal();
+        Density[] values = Density.values();
+        int delta = offset == values.length - 1 ? -1 : 1;
+
+        do {
+            if (set.contains(values[offset])) {
+                return values[offset];
+            }
+
+            offset += delta;
+            deltaOffset++;
+
+            if (delta > 0) {
+                delta = -deltaOffset;
+
+                if (offset + delta < 0) {
+                    delta = 1;
+                }
+            } else {
+                delta = deltaOffset;
+
+                if (offset + delta >= values.length) {
+                    delta = -1;
+                }
+            }
+        } while (deltaOffset <= values.length);
+
+        return null;
+    }
+
     public static Density getDensity(Context ctx) {
-        Density density;
-        switch (ctx.getResources().getDisplayMetrics().densityDpi) {
-            case 120: // ldpi
-                density = Density.Low;
-                break;
-            case 160: // mdpi
-            default:
-                density = Density.Medium;
-                break;
-            case 213: // TV
-                density = Density.TV;
-                break;
-            case 240: // hdpi
-                density = Density.High;
-                break;
-            case 320: // xhdpi
-                density = Density.XHigh;
-                break;
-            case 480: // xxhdpi
-                density = Density.XXHigh;
-                break;
-            case 640: // xxhdpi
-                density = Density.XXXHigh;
-                break;
-        }
-        return density;
+        return Density.valueOf(ctx.getResources().getDisplayMetrics().densityDpi);
     }
 
     @SuppressWarnings("unchecked")
