@@ -10,12 +10,12 @@ import java.util.EnumSet;
  *
  * @author xBlackCat
  */
-public class TestUIUtils {
+public class TestDensity {
     @Test
     public void densityFinder() {
         Assert.assertEquals(
                 Density.XXHigh,
-                UIUtils.findNearestDensity(
+                Density.findNearestDensity(
                         EnumSet.of(Density.XXHigh, Density.XXXHigh),
                         Density.High
                 )
@@ -23,7 +23,7 @@ public class TestUIUtils {
 
         Assert.assertEquals(
                 Density.Medium,
-                UIUtils.findNearestDensity(
+                Density.findNearestDensity(
                         EnumSet.of(Density.Medium, Density.XXXHigh),
                         Density.High
                 )
@@ -31,7 +31,7 @@ public class TestUIUtils {
 
         Assert.assertEquals(
                 Density.High,
-                UIUtils.findNearestDensity(
+                Density.findNearestDensity(
                         EnumSet.allOf(Density.class),
                         Density.High
                 )
@@ -39,7 +39,7 @@ public class TestUIUtils {
 
         Assert.assertEquals(
                 Density.XXHigh,
-                UIUtils.findNearestDensity(
+                Density.findNearestDensity(
                         EnumSet.of(Density.XXHigh, Density.XXXHigh),
                         Density.Low
                 )

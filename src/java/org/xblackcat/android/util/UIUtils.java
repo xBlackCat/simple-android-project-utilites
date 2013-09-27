@@ -24,7 +24,6 @@ import org.xblackcat.android.R;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -149,46 +148,6 @@ public class UIUtils {
         progressBar.setIndeterminate(true);
         progressBar.setBackgroundDrawable(null);
         return progressBar;
-    }
-
-    public static String getDensityString(Context ctx) {
-        return getDensity(ctx).getAbbr();
-    }
-
-    public static Density findNearestDensity(Set<Density> set, Density targetDensity) {
-        int deltaOffset = 1;
-        int offset = targetDensity.ordinal();
-        Density[] values = Density.values();
-        int delta = offset == values.length - 1 ? -1 : 1;
-
-        do {
-            if (set.contains(values[offset])) {
-                return values[offset];
-            }
-
-            offset += delta;
-            deltaOffset++;
-
-            if (delta > 0) {
-                delta = -deltaOffset;
-
-                if (offset + delta < 0) {
-                    delta = 1;
-                }
-            } else {
-                delta = deltaOffset;
-
-                if (offset + delta >= values.length) {
-                    delta = -1;
-                }
-            }
-        } while (deltaOffset <= values.length);
-
-        return null;
-    }
-
-    public static Density getDensity(Context ctx) {
-        return Density.valueOf(ctx.getResources().getDisplayMetrics().densityDpi);
     }
 
     @SuppressWarnings("unchecked")

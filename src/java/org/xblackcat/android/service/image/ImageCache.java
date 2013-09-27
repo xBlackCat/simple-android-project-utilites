@@ -7,6 +7,7 @@ import android.support.v4.util.LruCache;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
+import org.xblackcat.android.util.Density;
 import org.xblackcat.android.util.IOUtils;
 import org.xblackcat.android.util.UIUtils;
 
@@ -14,10 +15,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -26,14 +24,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author xBlackCat
  */
 public class ImageCache {
-    public static final int THUMB_SIZE = 150;
-
     private static final String TAG = "ImageCache";
     private static final String TAG_LOADER = "ImageCache_Loader";
-    private final Bitmap invalidImage;
+    private final Density systemDensity;
+    private Bitmap invalidImage;
 
-    public static final String SUFFIX_THUMB = ".thumb";
-    public static final String SUFFIX_REGULAR = "";
     private final Context ctx;
     private final ImageCacheDB readDB;
 
@@ -41,49 +36,58 @@ public class ImageCache {
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final LruCache<String, Bitmap> cacheImages;
-    private final LruCache<String, Bitmap> cacheThumbs;
 
-    public ImageCache(Context ctx, Bitmap invalidImage) {
+    public ImageCache(Context ctx) {
         this.ctx = ctx;
+
         readDB = new ImageCacheDB(this.ctx);
         cacheImages = new ImageMemoryCache(ctx);
-        cacheThumbs = new ImageMemoryCache(ctx);
 
-        this.invalidImage = invalidImage;
+        systemDensity = Density.getSystemDensity(ctx);
 
         Thread loadingThread = new Thread(loadProcessor, TAG_LOADER);
         loadingThread.setDaemon(true);
         loadingThread.start();
     }
 
-    public void getImage(boolean thumb, String url, final OnImageLoad onLoad) {
-        loadProcessor.addToLoad(thumb, url, onLoad);
+    public static void cleanImages(Context ctx) {
+        ImageCacheDB db = new ImageCacheDB(ctx);
+
+        for (String s : db.getImageFileNames()) {
+            ctx.deleteFile(s);
+        }
+
+        ImageCacheDB.drop(ctx);
     }
 
     /**
-     * Try to get an image from local cache only.
-     *
-     * @param thumb flag should be loaded a thumb or real image
-     * @param url   image source url
-     * @return cached bitmap or null if image is not cached
+     * Loads an image by URL and stores it in cache
      */
-    public Bitmap getImage(boolean thumb, String url) {
-        Bitmap bitmap;
-        if (thumb) {
-            bitmap = getBitmapFromCache(url, cacheThumbs, SUFFIX_THUMB);
-        } else {
-            bitmap = getBitmapFromCache(url, cacheImages, SUFFIX_REGULAR);
-        }
-
-        return bitmap;
+    public void getImage(ImageUrl url, final OnImageLoad onLoad) {
+        loadProcessor.addToLoad(url, onLoad);
     }
 
-    private Bitmap getBitmapFromCache(String url, LruCache<String, Bitmap> cache, String suffix) {
+    /**
+     * Loads an image by URL and stores it in cache
+     */
+    public void getImage(String url, final OnImageLoad onLoad) {
+        getImage(new ImageUrl(url), onLoad);
+        }
+
+    public Bitmap getInvalidImage() {
+        return invalidImage;
+    }
+
+    public Bitmap getBitmapFromCache(String url) {
+        if (url == null) {
+            return null;
+        }
+
         // First - check a memory cache
         Bitmap bitmap;
         try {
             lock.readLock().lock();
-            bitmap = cache.get(url);
+            bitmap = cacheImages.get(url);
         } finally {
             lock.readLock().unlock();
         }
@@ -93,12 +97,12 @@ public class ImageCache {
 
             String fileName = readDB.getImageFileName(url);
             if (fileName != null) {
-                Log.d(TAG, "Load image from file " + fileName + suffix + ". Url " + url);
+                Log.d(TAG, "Load image from file " + fileName + ". Url " + url);
                 try {
-                    bitmap = loadFromFile(fileName + suffix);
+                    bitmap = loadFromFile(fileName);
                 } catch (IOException e) {
                     bitmap = null;
-                    Log.d(TAG, "Failed to load image from file " + fileName + suffix + ". Url: " + url, e);
+                    Log.d(TAG, "Failed to load image from file " + fileName + ". Url: " + url, e);
                 }
             }
         }
@@ -126,14 +130,17 @@ public class ImageCache {
         if (fileName != null) {
             // Remove file
             readDB.removeImage(url);
-            ctx.deleteFile(fileName + SUFFIX_REGULAR);
-            ctx.deleteFile(fileName + SUFFIX_THUMB);
+            ctx.deleteFile(fileName);
         }
     }
 
-    protected final Bitmap checkCacheOrLoad(LruCache<String, Bitmap> cache, String suffix, String url) {
+    public final Bitmap checkCacheOrLoad(ImageUrl url) {
         Log.d(TAG, "Get an image by url " + url);
-        Bitmap bitmap = getBitmapFromCache(url, cache, suffix);
+        if (url == null) {
+            return null;
+        }
+
+        Bitmap bitmap = getBitmapFromCache(url.getUrl());
 
         if (bitmap == null) {
             // Not found in cache
@@ -142,7 +149,7 @@ public class ImageCache {
         return bitmap;
     }
 
-    private Bitmap loadBitmap(String url) {
+    public Bitmap loadBitmap(ImageUrl url) {
         WindowManager wm = (WindowManager) ctx.getSystemService(Context.WINDOW_SERVICE);
         Display display = wm.getDefaultDisplay();
 
@@ -155,11 +162,11 @@ public class ImageCache {
             int sampleSize = 1;
             do {
                 try {
-                    bitmap = IOUtils.loadImage(url, sampleSize);
+                    bitmap = IOUtils.loadImage(url.getUrl(), sampleSize);
 
                     if (bitmap == null) {
                         Log.w(TAG, "Can't decode image by url [" + url + "].");
-                        bitmap = invalidImage;
+                        bitmap = null;
                         break;
                     }
                 } catch (OutOfMemoryError e) {
@@ -170,6 +177,17 @@ public class ImageCache {
             } while (bitmap == null && sampleSize < 10);
 
             if (bitmap != null) {
+                Density sourceDensity = url.getDensity();
+                if (sourceDensity != null && sourceDensity != systemDensity) {
+                    // Rescale image
+
+                    int newWidth = bitmap.getWidth() * systemDensity.getDensity() / sourceDensity.getDensity();
+                    int newHeight = bitmap.getHeight() * systemDensity.getDensity() / sourceDensity.getDensity();
+
+                    bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+                }
+
+
                 do {
                     fileName = generateFileName();
                 } while (new File(fileName).exists());
@@ -183,20 +201,16 @@ public class ImageCache {
                     bitmap = UIUtils.scaleBitmap(bitmap, targetSize);
                 }
 
-                storeToFile(fileName + SUFFIX_REGULAR, bitmap);
+                storeToFile(fileName, bitmap);
 
-                Bitmap thumbBitmap = UIUtils.scaleBitmap(bitmap, THUMB_SIZE);
-                storeToFile(fileName + SUFFIX_THUMB, thumbBitmap);
-
-                readDB.storeInCache(url, fileName);
+                readDB.storeInCache(url.getUrl(), fileName);
 
                 try {
                     lock.writeLock().lock();
-                    cacheImages.put(url, bitmap);
-                    cacheThumbs.put(url, thumbBitmap);
+                    cacheImages.put(url.getUrl(), bitmap);
                 } finally {
                     lock.writeLock().unlock();
-                }
+            }
             }
         } catch (IOException e) {
             Log.w(TAG, "Can't load and image from internet. Url: " + url, e);
@@ -208,7 +222,7 @@ public class ImageCache {
     }
 
     private String generateFileName() {
-        return UUID.randomUUID().toString().replaceAll("-", SUFFIX_REGULAR) + ".png";
+        return UUID.randomUUID().toString().replaceAll("-", "") + ".png";
     }
 
     private void storeToFile(String fileName, Bitmap bitmap) throws IOException {
@@ -224,15 +238,37 @@ public class ImageCache {
         lock.writeLock().lock();
         try {
             cacheImages.evictAll();
-            cacheThumbs.evictAll();
         } finally {
             lock.writeLock().unlock();
         }
 
     }
 
+    public void setInvalidImage(Bitmap noImageBitmap) {
+        this.invalidImage = noImageBitmap;
+    }
+
     private class ImageLoader implements Runnable {
-        private final Map<String, LoadInfo> queue = new LinkedHashMap<>();
+        private final Queue<LoadInfo> queue = new PriorityQueue<>(
+                5,
+                new Comparator<LoadInfo>() {
+                    @Override
+                    public int compare(LoadInfo loadInfo, LoadInfo loadInfo2) {
+                        int c = loadInfo.postProcessor.size() - loadInfo2.postProcessor.size();
+                        if (c != 0) {
+                            return 0;
+                        }
+
+                        if (loadInfo.timeline > loadInfo2.timeline) {
+                            return 1;
+                        } else if (loadInfo.timeline < loadInfo2.timeline) {
+                            return -1;
+                        } else {
+                            return 0;
+                        }
+                    }
+                }
+        );
         private final Object lock = new Object();
 
         @Override
@@ -245,18 +281,13 @@ public class ImageCache {
                             lock.wait();
                         }
 
-                        Iterator<LoadInfo> iterator = queue.values().iterator();
-                        info = iterator.next();
-                        iterator.remove();
+                        info = queue.poll();
                     }
 
-                    Bitmap bitmap;
-                    if (info.returnTumb) {
-                        bitmap = checkCacheOrLoad(cacheThumbs, SUFFIX_THUMB, info.url);
-                    } else {
-                        bitmap = checkCacheOrLoad(cacheImages, SUFFIX_REGULAR, info.url);
+                    Bitmap bitmap = checkCacheOrLoad(info.url);
+                    for (OnImageLoad pp : info.postProcessor) {
+                        pp.loaded(bitmap);
                     }
-                    info.postProcessor.loaded(bitmap);
                 } catch (Exception e) {
                     if (e instanceof InterruptedException) {
                         Log.e(TAG_LOADER, "Loader thread interrupted", e);
@@ -268,15 +299,18 @@ public class ImageCache {
             }
         }
 
-        public boolean addToLoad(boolean thumb, String url, OnImageLoad onLoad) {
+        public boolean addToLoad(ImageUrl url, OnImageLoad onLoad) {
             synchronized (lock) {
-                if (queue.containsKey(url)) {
-                    return false;
-                } else {
-                    queue.put(url, new LoadInfo(url, thumb, onLoad));
-                    lock.notifyAll();
-                    return true;
+                for (LoadInfo i : queue) {
+                    if (i.url.equals(url)) {
+                        i.postProcessor.add(onLoad);
+                        return false;
+                    }
                 }
+
+                queue.add(new LoadInfo(url, onLoad));
+                lock.notifyAll();
+                return true;
             }
         }
 
@@ -288,14 +322,14 @@ public class ImageCache {
         }
 
         private class LoadInfo {
-            private final String url;
-            private final boolean returnTumb;
-            private final OnImageLoad postProcessor;
+            private final long timeline = System.currentTimeMillis();
+            private final ImageUrl url;
+             private final List<OnImageLoad> postProcessor;
 
-            private LoadInfo(String url, boolean returnTumb, OnImageLoad postProcessor) {
+            private LoadInfo(ImageUrl url, OnImageLoad postProcessor) {
                 this.url = url;
-                this.returnTumb = returnTumb;
-                this.postProcessor = postProcessor;
+                this.postProcessor = new ArrayList<>();
+                this.postProcessor.add(postProcessor);
             }
         }
     }

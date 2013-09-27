@@ -10,6 +10,8 @@ import java.util.regex.Pattern;
  * @author xBlackCat
  */
 public class Version implements Comparable<Version>, Serializable {
+    private static final int serialVersionUID = 1;
+
     private static final Pattern EXTRACT_DIGITS = Pattern.compile(".*?(\\d+).*");
 
     private final int[] version;
