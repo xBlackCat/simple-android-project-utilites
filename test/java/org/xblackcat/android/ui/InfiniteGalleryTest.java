@@ -1,9 +1,8 @@
-package com.pokerstars.tv.ui.activity.featured;
+package org.xblackcat.android.ui;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.xblackcat.android.ui.InfiniteGallery;
 
 /**
  * 25.09.13 9:53
