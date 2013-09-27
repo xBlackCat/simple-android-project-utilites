@@ -157,6 +157,9 @@ public class UIUtils {
             case 320: // xhdpi
                 density = "xhdpi";
                 break;
+            case 480: // xxhdpi
+                density = "xxhdpi";
+                break;
         }
         return density;
     }
