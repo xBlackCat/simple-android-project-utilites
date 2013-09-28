@@ -1,9 +1,5 @@
 package org.xblackcat.android.util;
 
-import android.content.Context;
-
-import java.util.Set;
-
 /**
  * 27.09.13 15:31
  *
@@ -41,42 +37,6 @@ public enum Density {
         }
 
         return Unknown;
-    }
-
-    public static Density findNearestDensity(Set<Density> available, Density targetDensity) {
-        int deltaOffset = 1;
-        int offset = targetDensity.ordinal();
-        Density[] values = values();
-        int delta = offset == values.length - 1 ? -1 : 1;
-
-        do {
-            if (available.contains(values[offset])) {
-                return values[offset];
-            }
-
-            offset += delta;
-            deltaOffset++;
-
-            if (delta > 0) {
-                delta = -deltaOffset;
-
-                if (offset + delta < 0) {
-                    delta = 1;
-                }
-            } else {
-                delta = deltaOffset;
-
-                if (offset + delta >= values.length) {
-                    delta = -1;
-                }
-            }
-        } while (deltaOffset <= values.length);
-
-        return null;
-    }
-
-    public static Density getSystemDensity(Context ctx) {
-        return valueOf(ctx.getResources().getDisplayMetrics().densityDpi);
     }
 
     private final String abbr;

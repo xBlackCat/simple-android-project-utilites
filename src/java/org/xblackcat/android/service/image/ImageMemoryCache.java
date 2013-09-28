@@ -10,7 +10,7 @@ import android.support.v4.util.LruCache;
  *
  * @author xBlackCat
  */
-public class ImageMemoryCache extends LruCache<String, Bitmap> {
+class ImageMemoryCache extends LruCache<String, Bitmap> {
     public ImageMemoryCache(Context context) {
         super(1024 * 1024 * (((ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass() >> 2));
     }

@@ -1,6 +1,4 @@
-package org.xblackcat.android.service.image;
-
-import org.xblackcat.android.util.Density;
+package org.xblackcat.android.util;
 
 import java.io.Serializable;
 

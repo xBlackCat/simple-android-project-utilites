@@ -24,6 +24,8 @@ import org.xblackcat.android.R;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -234,6 +236,49 @@ public class UIUtils {
         border.getPaint().setColor(color);
 
         return border;
+    }
+
+    public static ImageUrl findNearestImageDensity(Map<Density, String> urlList, Density targetDensity) {
+        Density nearDensity = findNearestDensity(urlList.keySet(), targetDensity);
+
+        String imageUrl = urlList.get(nearDensity);
+        return new ImageUrl(imageUrl, nearDensity);
+    }
+
+    public static Density findNearestDensity(Set<Density> available, Density targetDensity) {
+        int deltaOffset = 1;
+        int offset = targetDensity.ordinal();
+        Density[] values = Density.values();
+        int delta = offset == values.length - 1 ? -1 : 1;
+
+        do {
+            if (available.contains(values[offset])) {
+                return values[offset];
+            }
+
+            offset += delta;
+            deltaOffset++;
+
+            if (delta > 0) {
+                delta = -deltaOffset;
+
+                if (offset + delta < 0) {
+                    delta = 1;
+                }
+            } else {
+                delta = deltaOffset;
+
+                if (offset + delta >= values.length) {
+                    delta = -1;
+                }
+            }
+        } while (deltaOffset <= values.length);
+
+        return null;
+    }
+
+    public static Density getSystemDensity(Context ctx) {
+        return Density.valueOf(ctx.getResources().getDisplayMetrics().densityDpi);
     }
 
     public static class LinkSpec {

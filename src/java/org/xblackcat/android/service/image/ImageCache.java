@@ -9,6 +9,7 @@ import android.view.Display;
 import android.view.WindowManager;
 import org.xblackcat.android.util.Density;
 import org.xblackcat.android.util.IOUtils;
+import org.xblackcat.android.util.ImageUrl;
 import org.xblackcat.android.util.UIUtils;
 
 import java.io.BufferedInputStream;
@@ -43,7 +44,7 @@ public class ImageCache {
         readDB = new ImageCacheDB(this.ctx);
         cacheImages = new ImageMemoryCache(ctx);
 
-        systemDensity = Density.getSystemDensity(ctx);
+        systemDensity = UIUtils.getSystemDensity(ctx);
 
         Thread loadingThread = new Thread(loadProcessor, TAG_LOADER);
         loadingThread.setDaemon(true);

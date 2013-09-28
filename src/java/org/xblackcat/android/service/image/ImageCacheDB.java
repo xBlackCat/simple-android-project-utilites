@@ -13,7 +13,7 @@ import java.util.Iterator;
  *
  * @author xBlackCat
  */
-public class ImageCacheDB extends SQLiteOpenHelper {
+class ImageCacheDB extends SQLiteOpenHelper {
     private static int DB_VERSION = 1;
     private static String DB_NAME = "image_cache.db";
 
