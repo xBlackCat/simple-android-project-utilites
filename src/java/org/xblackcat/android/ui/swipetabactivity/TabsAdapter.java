@@ -7,6 +7,7 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TabHost;
 
 import java.util.*;
 
@@ -30,12 +31,17 @@ class TabsAdapter extends FragmentPagerAdapter {
         super(fragmentManager);
     }
 
-    public void addTab(String tag, View view, Runnable onShow) {
-        addTab(tag, view, onShow, true);
-    }
-
     public void addTab(String tag, View view, Runnable onShow, boolean enable) {
         TabInfo info = new TabInfo(tag, view, onShow);
+        addTabInfo(tag, enable, info);
+    }
+
+    public void addTab(String tag, TabHost.TabContentFactory factory, Runnable onShow, boolean enable) {
+        TabInfo info = new TabInfo(tag, factory, onShow);
+        addTabInfo(tag, enable, info);
+    }
+
+    private void addTabInfo(String tag, boolean enable, TabInfo info) {
         mTabs.add(info);
         if (enable) {
             enabledTabs.add(info);
@@ -53,12 +59,7 @@ class TabsAdapter extends FragmentPagerAdapter {
     @Override
     public Fragment getItem(int position) {
         final TabInfo info = enabledTabs.get(position);
-        return new Fragment() {
-            @Override
-            public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-                return info.view;
-            }
-        };
+        return info.fragment;
     }
 
     public String tagForPosition(int position) {
@@ -186,12 +187,28 @@ class TabsAdapter extends FragmentPagerAdapter {
     static final class TabInfo {
         private final String tag;
         private final Runnable onShow;
-        private final View view;
+        private final Fragment fragment;
 
-        TabInfo(String tag, View view, Runnable onShow) {
+        TabInfo(String tag, final View view, Runnable onShow) {
             this.tag = tag;
             this.onShow = onShow;
-            this.view = view;
+            this.fragment = new Fragment() {
+                @Override
+                public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+                    return view;
+                }
+            };
+        }
+
+        TabInfo(final String tag, final TabHost.TabContentFactory view, Runnable onShow) {
+            this.tag = tag;
+            this.onShow = onShow;
+            this.fragment = new Fragment() {
+                @Override
+                public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+                    return view.createTabContent(tag);
+                }
+            };
         }
     }
 }

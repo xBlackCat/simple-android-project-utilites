@@ -24,13 +24,11 @@ public class EnablableViewPager extends ViewPager {
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         return swipeEnabled && super.onInterceptTouchEvent(ev);
-
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
         return swipeEnabled && super.onTouchEvent(ev);
-
     }
 
     public boolean isSwipeEnabled() {

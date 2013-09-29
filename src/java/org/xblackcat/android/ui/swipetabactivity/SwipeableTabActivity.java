@@ -1,7 +1,6 @@
 package org.xblackcat.android.ui.swipetabactivity;
 
 import android.content.Context;
-import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewPager;
 import android.view.View;
@@ -23,11 +22,10 @@ public class SwipeableTabActivity extends FragmentActivity {
     protected EnablableViewPager mViewPager;
     protected TabHost mTabHost;
     protected TabsAdapter mTabsAdapter;
+    private TabHost.OnTabChangeListener globalTabChangeListener;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
+    public void onContentChanged() {
         mTabHost = (TabHost) findViewById(android.R.id.tabhost);
         mTabHost.setup();
 
@@ -64,6 +62,10 @@ public class SwipeableTabActivity extends FragmentActivity {
                         mViewPager.setCurrentItem(position);
                         mTabsAdapter.fireOnShow(tabId);
 
+                        if (globalTabChangeListener != null) {
+                            globalTabChangeListener.onTabChanged(tabId);
+                        }
+
                         TabHost.OnTabChangeListener l = tabListeners.get(tabId);
                         if (l != null) {
                             l.onTabChanged(tabId);
@@ -73,12 +75,16 @@ public class SwipeableTabActivity extends FragmentActivity {
         );
     }
 
-    public void setOnTabChangeListener(String tag, TabHost.OnTabChangeListener listener) {
+    public void setOnTabChangedListener(String tag, TabHost.OnTabChangeListener listener) {
         if (listener != null) {
             tabListeners.put(tag, listener);
         } else {
             tabListeners.remove(tag);
         }
+    }
+
+    public void setOnTabChangedListener(TabHost.OnTabChangeListener globalListener) {
+        this.globalTabChangeListener = globalListener;
     }
 
     public void setSwipeEnabled(boolean swipeEnabled) {
@@ -111,16 +117,30 @@ public class SwipeableTabActivity extends FragmentActivity {
     }
 
     protected int clearAllTabs() {
-        int currentTab = mTabHost.getCurrentTab();
+        int currentTab = getCurrentTab();
         mTabHost.setCurrentTab(0);
         mTabHost.clearAllTabs();
         mTabsAdapter.clearAllTabs();
         return currentTab;
     }
 
-    public void addTab(String tag, View label, View view, Runnable onShow) {
-        mTabsAdapter.addTab(tag, view, onShow);
+    public int getCurrentTab() {
+        return mTabHost.getCurrentTab();
+    }
 
+    public void addTab(String tag, View label, TabHost.TabContentFactory view, Runnable onShow) {
+        mTabsAdapter.addTab(tag, view, onShow, true);
+
+        fillModel(tag, label);
+    }
+
+    public void addTab(String tag, View label, View view, Runnable onShow) {
+        mTabsAdapter.addTab(tag, view, onShow, true);
+
+        fillModel(tag, label);
+    }
+
+    private void fillModel(String tag, View label) {
         TabHost.TabSpec tab = mTabHost.newTabSpec(tag);
         tab.setIndicator(label);
         tab.setContent(new DummyTabFactory(this));
