@@ -44,17 +44,27 @@ public final class IOUtils {
     }
 
     public static InputStream getInputStream(String sourceUrl) throws IOException {
-        boolean isGZip;
+        return getInputStream(sourceUrl, true);
+    }
+
+    public static InputStream getInputStream(String sourceUrl, boolean checkGZippedUrl) throws IOException {
+        boolean isGZip = false;
         // Check compressed version first
 
-        InputStream stream;
-        try {
-            Log.d("OpenInputStream", "Try to load a compressed version of " + sourceUrl);
-            URL documentUrl = new URL(sourceUrl + ".gz");
-            URLConnection conn = documentUrl.openConnection();
-            stream = conn.getInputStream();
-            isGZip = true;
-        } catch (IOException e) {
+        InputStream stream = null;
+        if (checkGZippedUrl) {
+            try {
+                Log.d("OpenInputStream", "Try to load a compressed version of " + sourceUrl);
+                URL documentUrl = new URL(sourceUrl + ".gz");
+                URLConnection conn = documentUrl.openConnection();
+                stream = conn.getInputStream();
+                isGZip = true;
+            } catch (IOException e) {
+                stream = null;
+            }
+        }
+
+        if (stream == null) {
             Log.d("OpenInputStream", "Try to load a plain version of " + sourceUrl);
             URL documentUrl = new URL(sourceUrl);
             URLConnection conn = documentUrl.openConnection();
