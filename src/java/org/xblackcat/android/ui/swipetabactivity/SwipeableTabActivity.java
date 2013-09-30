@@ -1,6 +1,7 @@
 package org.xblackcat.android.ui.swipetabactivity;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewPager;
 import android.view.View;
@@ -75,6 +76,33 @@ public class SwipeableTabActivity extends FragmentActivity {
         );
     }
 
+    @Override
+    protected void onRestoreInstanceState(Bundle state) {
+        super.onRestoreInstanceState(state);
+        int cur = state.getInt("currentTab", -1);
+        if (cur != -1) {
+            mTabHost.setCurrentTab(cur);
+        }
+    }
+
+    @Override
+    protected void onPostCreate(Bundle icicle) {
+        super.onPostCreate(icicle);
+
+        if (mTabHost.getCurrentTab() == -1) {
+            mTabHost.setCurrentTab(0);
+        }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        int currentTabTag = mTabHost.getCurrentTab();
+        if (currentTabTag != -1) {
+            outState.putInt("currentTab", currentTabTag);
+        }
+    }
+
     public void setOnTabChangedListener(String tag, TabHost.OnTabChangeListener listener) {
         if (listener != null) {
             tabListeners.put(tag, listener);
@@ -114,6 +142,10 @@ public class SwipeableTabActivity extends FragmentActivity {
 
     protected void setCurrentTab(int currentTab) {
         mTabHost.setCurrentTab(currentTab);
+        int vp = mTabsAdapter.visiblePosition(currentTab);
+        if (vp != -1) {
+            mViewPager.setCurrentItem(vp, false);
+        }
     }
 
     protected int clearAllTabs() {

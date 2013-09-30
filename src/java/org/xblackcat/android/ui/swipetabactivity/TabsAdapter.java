@@ -9,7 +9,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TabHost;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * This is a helper class that implements the management of tabs and all
@@ -23,9 +26,8 @@ import java.util.*;
  * tab changes.
  */
 class TabsAdapter extends FragmentPagerAdapter {
-    private final List<TabInfo> mTabs = new ArrayList<>();
+    private final List<TabInfo> allTabs = new ArrayList<>();
     private final List<TabInfo> enabledTabs = new LinkedList<>();
-    private final Set<String> enabledTabTags = new HashSet<>();
 
     public TabsAdapter(FragmentManager fragmentManager) {
         super(fragmentManager);
@@ -33,19 +35,18 @@ class TabsAdapter extends FragmentPagerAdapter {
 
     public void addTab(String tag, View view, Runnable onShow, boolean enable) {
         TabInfo info = new TabInfo(tag, view, onShow);
-        addTabInfo(tag, enable, info);
+        addTabInfo(enable, info);
     }
 
     public void addTab(String tag, TabHost.TabContentFactory factory, Runnable onShow, boolean enable) {
         TabInfo info = new TabInfo(tag, factory, onShow);
-        addTabInfo(tag, enable, info);
+        addTabInfo(enable, info);
     }
 
-    private void addTabInfo(String tag, boolean enable, TabInfo info) {
-        mTabs.add(info);
+    private void addTabInfo(boolean enable, TabInfo info) {
+        allTabs.add(info);
         if (enable) {
             enabledTabs.add(info);
-            enabledTabTags.add(tag);
 
             notifyDataSetChanged();
         }
@@ -62,8 +63,26 @@ class TabsAdapter extends FragmentPagerAdapter {
         return info.fragment;
     }
 
+    public void removeTabByTag(String tag) {
+        int i = 0;
+        while (i < allTabs.size()) {
+            if (tag.equals(allTabs.get(i).tag)) {
+                enabledTabs.remove(allTabs.remove(i));
+            }
+            i++;
+        }
+    }
+
+    public void removeTabByPosition(int position) {
+        enabledTabs.remove(allTabs.remove(position));
+    }
+
+    public void removeTabByVisiblePosition(int position) {
+        allTabs.remove(enabledTabs.remove(position));
+    }
+
     public String tagForPosition(int position) {
-        return mTabs.get(position).tag;
+        return allTabs.get(position).tag;
     }
 
     public int visiblePositionForTag(String tabId) {
@@ -79,8 +98,8 @@ class TabsAdapter extends FragmentPagerAdapter {
 
     public int positionForTag(String tag) {
         int i = 0;
-        while (i < mTabs.size()) {
-            if (tag.equals(mTabs.get(i).tag)) {
+        while (i < allTabs.size()) {
+            if (tag.equals(allTabs.get(i).tag)) {
                 return i;
             }
             i++;
@@ -89,28 +108,25 @@ class TabsAdapter extends FragmentPagerAdapter {
     }
 
     public void setEnabled(int position, boolean enable) {
-        String tag = mTabs.get(position).tag;
-        if (enabledTabTags.contains(tag) == enable) {
-            return;
-        }
+        TabInfo tab = allTabs.get(position);
 
         if (enable) {
             int ie = 0;
             int i = 0;
             while (i < position) {
-                if (mTabs.get(i).tag.equals(enabledTabs.get(ie).tag)) {
+                if (allTabs.get(i).equals(enabledTabs.get(ie))) {
                     ie++;
                 }
 
                 i++;
             }
 
-            enabledTabs.add(ie, mTabs.get(position));
+            enabledTabs.add(ie, allTabs.get(position));
         } else {
             Iterator<TabInfo> iterator = enabledTabs.iterator();
             while (iterator.hasNext()) {
                 TabInfo info = iterator.next();
-                if (info.tag.equals(tag)) {
+                if (info.equals(tab)) {
                     iterator.remove();
                     break;
                 }
@@ -121,27 +137,23 @@ class TabsAdapter extends FragmentPagerAdapter {
     }
 
     public void setEnabled(String tag, boolean enable) {
-        if (enabledTabTags.contains(tag) == enable) {
-            return;
-        }
-
         if (enable) {
             int ie = 0;
             int i = 0;
-            while (i < mTabs.size()) {
-                String curTag = mTabs.get(i).tag;
-                if (curTag.equals(tag)) {
+            TabInfo tab = allTabs.get(i);
+            while (i < allTabs.size()) {
+                if (tab.tag.equals(tag)) {
                     break;
                 }
 
-                if (curTag.equals(enabledTabs.get(ie).tag)) {
+                if (tab.equals(enabledTabs.get(ie))) {
                     ie++;
                 }
 
                 i++;
             }
 
-            enabledTabs.add(ie, mTabs.get(i));
+            enabledTabs.add(ie, tab);
         } else {
             Iterator<TabInfo> iterator = enabledTabs.iterator();
             while (iterator.hasNext()) {
@@ -157,12 +169,13 @@ class TabsAdapter extends FragmentPagerAdapter {
     }
 
     public void clearAllTabs() {
-        mTabs.clear();
+        allTabs.clear();
+        enabledTabs.clear();
         notifyDataSetChanged();
     }
 
     public void fireOnShow(String tag) {
-        for (TabInfo tabInfo : mTabs) {
+        for (TabInfo tabInfo : allTabs) {
             if (tag.equals(tabInfo.tag)) {
                 if (tabInfo.onShow != null) {
                     tabInfo.onShow.run();
@@ -173,15 +186,31 @@ class TabsAdapter extends FragmentPagerAdapter {
     }
 
     public void fireOnShow(int position) {
-        TabInfo tabInfo = mTabs.get(position);
+        TabInfo tabInfo = allTabs.get(position);
 
         if (tabInfo.onShow != null) {
             tabInfo.onShow.run();
         }
     }
 
+    /**
+     * Returns an index of a tab specified by visible position;
+     *
+     * @param position visible position of a tag
+     * @return tab index in model.
+     */
     public int visibleToAbsPosition(int position) {
-        return positionForTag(enabledTabs.get(position).tag);
+        return allTabs.indexOf(enabledTabs.get(position));
+    }
+
+    /**
+     * Returns a visible position of a tab specified by its index. It tab is not enabled (not visible) then <code>-1</code> is returned.
+     *
+     * @param position index of tab in model
+     * @return visible position or <code>-1</code> if tab is disabled.
+     */
+    public int visiblePosition(int position) {
+        return enabledTabs.indexOf(allTabs.get(position));
     }
 
     static final class TabInfo {
