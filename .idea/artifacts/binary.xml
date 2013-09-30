@@ -1,0 +1,24 @@
+<component name="ArtifactManager">
+  <artifact build-on-make="true" name="binary">
+    <output-path>$PROJECT_DIR$/dist</output-path>
+    <root id="root">
+      <element id="archive" name="sapu-0.0.0.1.zip">
+        <element id="directory" name="src">
+          <element id="dir-copy" path="$PROJECT_DIR$/src/res" />
+          <element id="directory" name="java" />
+        </element>
+        <element id="file-copy" path="$PROJECT_DIR$/AndroidManifest.xml" />
+        <element id="file-copy" path="$PROJECT_DIR$/ant.properties" />
+        <element id="file-copy" path="$PROJECT_DIR$/local.properties" />
+        <element id="file-copy" path="$PROJECT_DIR$/proguard-project.txt" />
+        <element id="file-copy" path="$PROJECT_DIR$/project.properties" />
+        <element id="file-copy" path="$PROJECT_DIR$/SAPU.iml" />
+        <element id="directory" name="libs">
+          <element id="file-copy" path="$PROJECT_DIR$/libs/android-support-v13.jar" />
+          <element id="artifact" artifact-name="sapu" />
+        </element>
+        <element id="directory" name="gen" />
+      </element>
+    </root>
+  </artifact>
+</component>

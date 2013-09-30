@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="sapu">
+    <output-path>$PROJECT_DIR$/dist/</output-path>
+    <root id="archive" name="sapu.jar">
+      <element id="module-output" name="SAPU" />
+    </root>
+  </artifact>
+</component>

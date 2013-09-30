@@ -15,7 +15,7 @@ public class TestDensity {
     public void densityFinder() {
         Assert.assertEquals(
                 Density.XXHigh,
-                Density.findNearestDensity(
+                UIUtils.findNearestDensity(
                         EnumSet.of(Density.XXHigh, Density.XXXHigh),
                         Density.High
                 )
@@ -23,7 +23,7 @@ public class TestDensity {
 
         Assert.assertEquals(
                 Density.Medium,
-                Density.findNearestDensity(
+                UIUtils.findNearestDensity(
                         EnumSet.of(Density.Medium, Density.XXXHigh),
                         Density.High
                 )
@@ -31,7 +31,7 @@ public class TestDensity {
 
         Assert.assertEquals(
                 Density.High,
-                Density.findNearestDensity(
+                UIUtils.findNearestDensity(
                         EnumSet.allOf(Density.class),
                         Density.High
                 )
@@ -39,7 +39,7 @@ public class TestDensity {
 
         Assert.assertEquals(
                 Density.XXHigh,
-                Density.findNearestDensity(
+                UIUtils.findNearestDensity(
                         EnumSet.of(Density.XXHigh, Density.XXXHigh),
                         Density.Low
                 )
