@@ -1,4 +1,4 @@
-package org.xblackcat.android.util;
+package org.xblackcat.android.service.image;
 
 import java.io.Serializable;
 
@@ -48,5 +48,10 @@ public class ImageUrl implements Serializable {
         int result = url.hashCode();
         result = 31 * result + (density != null ? density.hashCode() : 0);
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Image [url='" + url + "' " + density + ']';
     }
 }

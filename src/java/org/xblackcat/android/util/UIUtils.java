@@ -21,6 +21,8 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.ViewSwitcher;
 import org.xblackcat.android.R;
+import org.xblackcat.android.service.image.Density;
+import org.xblackcat.android.service.image.ImageUrl;
 
 import java.util.ArrayList;
 import java.util.List;

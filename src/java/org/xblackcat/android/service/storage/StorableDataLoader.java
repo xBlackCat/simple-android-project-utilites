@@ -51,11 +51,11 @@ public class StorableDataLoader<T extends Serializable> extends ADataLoader<Stor
      *
      * @author xBlackCat
      */
-    protected static class DataPack<T extends Serializable> {
+    public static class DataPack<T extends Serializable> {
         public final T data;
         public final Date date;
 
-        protected DataPack(T data, Date date) {
+        public DataPack(T data, Date date) {
             this.data = data;
             this.date = date;
         }

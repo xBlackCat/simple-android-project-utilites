@@ -3,13 +3,12 @@ package org.xblackcat.android.service.image;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
 import android.support.v4.util.LruCache;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
-import org.xblackcat.android.util.Density;
 import org.xblackcat.android.util.IOUtils;
-import org.xblackcat.android.util.ImageUrl;
 import org.xblackcat.android.util.UIUtils;
 
 import java.io.BufferedInputStream;
@@ -27,6 +26,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class ImageCache {
     private static final String TAG = "ImageCache";
     private static final String TAG_LOADER = "ImageCache_Loader";
+
     private final Density systemDensity;
     private Bitmap invalidImage;
 
@@ -46,9 +46,7 @@ public class ImageCache {
 
         systemDensity = UIUtils.getSystemDensity(ctx);
 
-        Thread loadingThread = new Thread(loadProcessor, TAG_LOADER);
-        loadingThread.setDaemon(true);
-        loadingThread.start();
+        loadProcessor.execute();
     }
 
     public static void cleanImages(Context ctx) {
@@ -64,16 +62,29 @@ public class ImageCache {
     /**
      * Loads an image by URL and stores it in cache
      */
-    public void getImage(ImageUrl url, final OnImageLoad onLoad) {
-        loadProcessor.addToLoad(url, onLoad);
+    public void getImage(String url, final OnImageLoad onLoad) {
+        getImage(url == null ? null : new ImageUrl(url), onLoad);
     }
 
     /**
-     * Loads an image by URL and stores it in cache
+     * Loads an image by URL and stores it in cache. After image is loaded a {@linkplain org.xblackcat.android.service.image.OnImageLoad} handler will be invoked.
+     * {@linkplain org.xblackcat.android.service.image.OnImageLoad#loaded(android.graphics.Bitmap)} is invoked in UI thread so there is no need for additional synchronization.
      */
-    public void getImage(String url, final OnImageLoad onLoad) {
-        getImage(new ImageUrl(url), onLoad);
+    public void getImage(ImageUrl url, final OnImageLoad onLoad) {
+        if (url == null || url.getUrl() == null) {
+            // Force to inform about 'no image'
+            onLoad.loaded(null);
+            return;
         }
+
+        Bitmap bitmap = getBitmapFromCache(url.getUrl());
+        if (bitmap != null) {
+            onLoad.loaded(onLoad.postProcessor(bitmap));
+            return;
+        }
+
+        loadProcessor.addToLoad(url, onLoad);
+    }
 
     public Bitmap getInvalidImage() {
         return invalidImage;
@@ -151,6 +162,10 @@ public class ImageCache {
     }
 
     public Bitmap loadBitmap(ImageUrl url) {
+        if (url == null || url.getUrl() == null) {
+            return null;
+        }
+
         WindowManager wm = (WindowManager) ctx.getSystemService(Context.WINDOW_SERVICE);
         Display display = wm.getDefaultDisplay();
 
@@ -211,7 +226,7 @@ public class ImageCache {
                     cacheImages.put(url.getUrl(), bitmap);
                 } finally {
                     lock.writeLock().unlock();
-            }
+                }
             }
         } catch (IOException e) {
             Log.w(TAG, "Can't load and image from internet. Url: " + url, e);
@@ -249,7 +264,7 @@ public class ImageCache {
         this.invalidImage = noImageBitmap;
     }
 
-    private class ImageLoader implements Runnable {
+    private class ImageLoader extends AsyncTask<Void, Runnable, Void> {
         private final Queue<LoadInfo> queue = new PriorityQueue<>(
                 5,
                 new Comparator<LoadInfo>() {
@@ -273,7 +288,7 @@ public class ImageCache {
         private final Object lock = new Object();
 
         @Override
-        public void run() {
+        protected Void doInBackground(Void... params) {
             while (true) {
                 try {
                     LoadInfo info;
@@ -286,8 +301,21 @@ public class ImageCache {
                     }
 
                     Bitmap bitmap = checkCacheOrLoad(info.url);
-                    for (OnImageLoad pp : info.postProcessor) {
-                        pp.loaded(bitmap);
+                    for (final OnImageLoad pp : info.postProcessor) {
+                        // Run each onLoad processor in separate task. Just in case.
+                        final Bitmap image;
+                        if (bitmap != null) {
+                            image = pp.postProcessor(bitmap);
+                        } else {
+                            image = null;
+                        }
+                        publishProgress(
+                                new Runnable() {
+                                    public void run() {
+                                        pp.loaded(image);
+                                    }
+                                }
+                        );
                     }
                 } catch (Exception e) {
                     if (e instanceof InterruptedException) {
@@ -296,6 +324,19 @@ public class ImageCache {
                     } else {
                         Log.w(TAG_LOADER, "Unexpected exception", e);
                     }
+                }
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(Runnable... values) {
+            for (Runnable r : values) {
+                try {
+                    r.run();
+                } catch (Exception e) {
+                    Log.e(TAG, "Unexpected exception while loading an image", e);
                 }
             }
         }
@@ -325,7 +366,7 @@ public class ImageCache {
         private class LoadInfo {
             private final long timeline = System.currentTimeMillis();
             private final ImageUrl url;
-             private final List<OnImageLoad> postProcessor;
+            private final List<OnImageLoad> postProcessor;
 
             private LoadInfo(ImageUrl url, OnImageLoad postProcessor) {
                 this.url = url;

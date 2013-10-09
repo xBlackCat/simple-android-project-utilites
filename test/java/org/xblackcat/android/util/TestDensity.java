@@ -2,6 +2,7 @@ package org.xblackcat.android.util;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.xblackcat.android.service.image.Density;
 
 import java.util.EnumSet;
 

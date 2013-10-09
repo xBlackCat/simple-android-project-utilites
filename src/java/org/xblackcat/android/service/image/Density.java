@@ -1,4 +1,4 @@
-package org.xblackcat.android.util;
+package org.xblackcat.android.service.image;
 
 /**
  * 27.09.13 15:31

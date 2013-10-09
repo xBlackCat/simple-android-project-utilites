@@ -1,0 +1,88 @@
+package org.xblackcat.android.ui.image;
+
+import android.graphics.Bitmap;
+import android.widget.BaseAdapter;
+import org.xblackcat.android.service.image.ImageCache;
+import org.xblackcat.android.service.image.ImageUrl;
+import org.xblackcat.android.service.image.OnImageLoad;
+
+/**
+ * Class for wrapping an data object to allow load images "on demand". Can be used in adapters for lazy image loading.
+ *
+ * @author xBlackCat
+ */
+public abstract class ImageHolder<T> {
+    protected final T data;
+    protected final BaseAdapter adapter;
+    protected final ImageCache cache;
+    private boolean loadInProgress = false;
+
+    protected ImageHolder(T data, BaseAdapter adapter, ImageCache imageCache) {
+        if (data == null) {
+            throw new NullPointerException("Data can not be null");
+        }
+
+        this.data = data;
+        this.cache = imageCache;
+        this.adapter = adapter;
+    }
+
+    protected void preloadImage() {
+        ImageUrl url = getUrl();
+        if (url == null) {
+            setImage(null);
+        } else {
+            Bitmap image = cache.getBitmapFromCache(url.getUrl());
+
+            if (image != null) {
+                setImage(image);
+            }
+        }
+    }
+
+    public T get() {
+        return data;
+    }
+
+    public abstract Bitmap getImage();
+
+    protected abstract void setImage(Bitmap image);
+
+    private void markAsSet() {
+        loadInProgress = false;
+        adapter.notifyDataSetChanged();
+    }
+
+    protected final void loadImage() {
+        final ImageUrl url = getUrl();
+
+        if (url == null) {
+            setImage(null);
+            markAsSet();
+            return;
+        }
+
+        // Should be executed in UI thread so we could not use synchronization
+        if (!loadInProgress) {
+            loadInProgress = true;
+
+            cache.getImage(
+                    url,
+                    new OnImageLoad() {
+                        @Override
+                        public void loaded(Bitmap loaded) {
+                            setImage(loaded);
+                            markAsSet();
+                        }
+                    }
+            );
+        }
+    }
+
+    protected abstract ImageUrl getUrl();
+
+    @Override
+    public String toString() {
+        return "ImageHolder: for " + data.toString();
+    }
+}
