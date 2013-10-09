@@ -15,6 +15,19 @@ public abstract class ImageHolder<T> {
     protected final T data;
     protected final BaseAdapter adapter;
     protected final ImageCache cache;
+    private final OnImageLoad onLoad = new OnImageLoad() {
+        @Override
+        public void loaded(Bitmap loaded) {
+            setImage(loaded);
+            markAsSet();
+        }
+
+        @Override
+        public Bitmap postProcessor(Bitmap image) {
+            return adjustImage(image);
+        }
+    };
+
     private boolean loadInProgress = false;
 
     protected ImageHolder(T data, BaseAdapter adapter, ImageCache imageCache) {
@@ -35,7 +48,7 @@ public abstract class ImageHolder<T> {
             Bitmap image = cache.getBitmapFromCache(url.getUrl());
 
             if (image != null) {
-                setImage(image);
+                setImage(adjustImage(image));
             }
         }
     }
@@ -45,6 +58,10 @@ public abstract class ImageHolder<T> {
     }
 
     public abstract Bitmap getImage();
+
+    protected Bitmap adjustImage(Bitmap image) {
+        return image;
+    }
 
     protected abstract void setImage(Bitmap image);
 
@@ -66,16 +83,7 @@ public abstract class ImageHolder<T> {
         if (!loadInProgress) {
             loadInProgress = true;
 
-            cache.getImage(
-                    url,
-                    new OnImageLoad() {
-                        @Override
-                        public void loaded(Bitmap loaded) {
-                            setImage(loaded);
-                            markAsSet();
-                        }
-                    }
-            );
+            cache.getImage(url, onLoad);
         }
     }
 

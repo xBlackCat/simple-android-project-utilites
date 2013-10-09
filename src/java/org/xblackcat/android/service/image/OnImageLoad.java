@@ -8,5 +8,7 @@ import android.graphics.Bitmap;
  * @author xBlackCat
  */
 public interface OnImageLoad {
+    Bitmap postProcessor(Bitmap image);
+
     void loaded(Bitmap image);
 }
