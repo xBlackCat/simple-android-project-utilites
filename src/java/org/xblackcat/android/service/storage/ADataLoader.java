@@ -36,7 +36,6 @@ public abstract class ADataLoader<T, O> extends AsyncTask<Void, Void, T> {
 
     @Override
     protected T doInBackground(Void... voids) {
-        long startOverall = System.currentTimeMillis();
         Log.d(TAG, "Load data from url " + sourceUrl);
 
         T data;
@@ -46,14 +45,8 @@ public abstract class ADataLoader<T, O> extends AsyncTask<Void, Void, T> {
                 InputStream filter = parser.filter(is);
                 Reader streamReader = new InputStreamReader(filter, Charset.forName("utf8"));
 
-                long start;
-                start = System.currentTimeMillis();
                 O result = parser.parse(streamReader);
-                Log.e("Performance", "[" + sourceUrl + "] Document parsed in " + (System.currentTimeMillis() - start) + " ms");
-                start = System.currentTimeMillis();
-
                 data = postProcess(result);
-                Log.e("Performance", "[" + sourceUrl + "] Document postprocessed in " + (System.currentTimeMillis() - start) + " ms");
             } finally {
                 is.close();
             }
@@ -62,7 +55,6 @@ public abstract class ADataLoader<T, O> extends AsyncTask<Void, Void, T> {
             return null;
         }
 
-        Log.e("Performance", "[" + sourceUrl + "] Total: " + (System.currentTimeMillis() - startOverall) + " ms");
         return data;
     }
 
