@@ -73,6 +73,8 @@ public final class IOUtils {
             isGZip = "gzip".equals(conn.getContentEncoding());
         }
 
+        stream = new BufferedInputStream(stream);
+
         if (isGZip) {
             Log.i("OpenInputStream", "Use GZip stream for url " + sourceUrl);
             stream = new GZIPInputStream(stream);

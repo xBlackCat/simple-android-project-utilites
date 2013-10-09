@@ -1,3 +1,4 @@
-.*/dist/
+dist/.*
 ^out$
 ^gen$
+^bin/.*
