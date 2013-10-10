@@ -70,6 +70,18 @@ public abstract class ImageHolder<T> {
         adapter.notifyDataSetChanged();
     }
 
+    /**
+     * Clears 'loading' flag for image. Image content will be requested again on demand if not yet loaded.
+     */
+    protected void clearLoadingFlag() {
+        loadInProgress = false;
+    }
+
+    /**
+     * Loads image by URL returned by {@linkplain #getUrl()}. If URL is null then instantly
+     * {@linkplain #setImage(android.graphics.Bitmap)} will be invoked with null as bitmap value -
+     * this is could be used as indicator of invalid image.
+     */
     protected final void loadImage() {
         final ImageUrl url = getUrl();
 
