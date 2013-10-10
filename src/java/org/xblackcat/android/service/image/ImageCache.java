@@ -77,7 +77,7 @@ public class ImageCache {
             return;
         }
 
-        Bitmap bitmap = getBitmapFromCache(url.getUrl());
+        Bitmap bitmap = getBitmapFromMemory(url.getUrl());
         if (bitmap != null) {
             onLoad.loaded(onLoad.postProcessor(bitmap));
             return;
@@ -94,17 +94,9 @@ public class ImageCache {
         if (url == null) {
             return null;
         }
+        Bitmap bitmap = getBitmapFromMemory(url);
 
-        // First - check a memory cache
-        Bitmap bitmap;
-        try {
-            lock.readLock().lock();
-            bitmap = cacheImages.get(url);
-        } finally {
-            lock.readLock().unlock();
-        }
-
-        if (bitmap == null) {
+       if (bitmap == null) {
             Log.d(TAG, "Image is not found in in-memory cache. Url: " + url);
 
             String fileName = readDB.getImageFileName(url);
@@ -117,6 +109,18 @@ public class ImageCache {
                     Log.d(TAG, "Failed to load image from file " + fileName + ". Url: " + url, e);
                 }
             }
+        }
+        return bitmap;
+    }
+
+    private Bitmap getBitmapFromMemory(String url) {
+        // First - check a memory cache
+        Bitmap bitmap;
+        try {
+            lock.readLock().lock();
+            bitmap = cacheImages.get(url);
+        } finally {
+            lock.readLock().unlock();
         }
         return bitmap;
     }
