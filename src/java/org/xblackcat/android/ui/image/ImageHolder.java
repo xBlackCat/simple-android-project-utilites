@@ -42,7 +42,7 @@ public abstract class ImageHolder<T> {
 
     protected void preloadImage() {
         ImageUrl url = getUrl();
-        if (url == null) {
+        if (url == null || url.getUrl() == null) {
             setImage(null);
         } else {
             Bitmap image = cache.getBitmapFromCache(url.getUrl());
