@@ -38,24 +38,28 @@ public abstract class ADataLoader<T, O> extends AsyncTask<Void, Void, T> {
     protected T doInBackground(Void... voids) {
         Log.d(TAG, "Load data from url " + sourceUrl);
 
-        T data;
+        O result;
         try {
             InputStream is = IOUtils.getInputStream(sourceUrl, checkGZippedUrl);
             try {
                 InputStream filter = parser.filter(is);
                 Reader streamReader = new InputStreamReader(filter, Charset.forName("utf8"));
 
-                O result = parser.parse(streamReader);
-                data = postProcess(result);
+                result = parser.parse(streamReader);
             } finally {
                 is.close();
             }
         } catch (Exception e) {
-            Log.e(TAG, "Can't parse data", e);
-            return null;
+            Log.e(TAG, "Can't load data", e);
+            result = null;
         }
 
-        return data;
+        try {
+            return postProcess(result);
+        } catch (Exception e) {
+            Log.e(TAG, "Can't process data", e);
+            return null;
+        }
     }
 
     protected abstract T postProcess(O o);
