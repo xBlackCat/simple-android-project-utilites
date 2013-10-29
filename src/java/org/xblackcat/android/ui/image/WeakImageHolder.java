@@ -11,37 +11,13 @@ import java.lang.ref.WeakReference;
  *
  * @author xBlackCat
  */
-public abstract class WeakImageHolder<T> extends ImageHolder<T> {
-    private WeakReference<Bitmap> image;
-
+public abstract class WeakImageHolder<T> extends RefImageHolder<WeakReference<Bitmap>, T> {
     protected WeakImageHolder(T data, BaseAdapter adapter, ImageCache imageCache) {
         super(data, adapter, imageCache);
     }
 
     @Override
-    protected void setImage(Bitmap image) {
-        if (image == null) {
-            image = cache.getInvalidImage();
-        }
-
-        this.image = new WeakReference<>(image);
+    protected WeakReference<Bitmap> coverWithReference(Bitmap image) {
+        return new WeakReference<>(image);
     }
-
-    @Override
-    public Bitmap getImage() {
-        if (image != null && image.get() != null) {
-            return image.get();
-        }
-
-        if (getUrl() == null) {
-            setImage(null);
-            if (image != null && image.get() != null) {
-                return image.get();
-            }
-        }
-
-        loadImage();
-        return null;
-    }
-
 }
