@@ -11,10 +11,7 @@ import android.view.WindowManager;
 import org.xblackcat.android.util.IOUtils;
 import org.xblackcat.android.util.UIUtils;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -37,6 +34,7 @@ public class ImageCache {
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final LruCache<String, Bitmap> cacheImages;
+    private final int maximumSize;
 
     public ImageCache(Context ctx) {
         this.ctx = ctx;
@@ -45,6 +43,10 @@ public class ImageCache {
         cacheImages = new ImageMemoryCache(ctx);
 
         systemDensity = UIUtils.getSystemDensity(ctx);
+        WindowManager wm = (WindowManager) ctx.getSystemService(Context.WINDOW_SERVICE);
+        Display display = wm.getDefaultDisplay();
+
+        maximumSize = Math.max(display.getHeight(), display.getWidth());
 
         loadProcessor.execute();
     }
@@ -96,7 +98,7 @@ public class ImageCache {
         }
         Bitmap bitmap = getBitmapFromMemory(url);
 
-       if (bitmap == null) {
+        if (bitmap == null) {
             Log.d(TAG, "Image is not found in in-memory cache. Url: " + url);
 
             String fileName = readDB.getImageFileName(url);
@@ -165,15 +167,36 @@ public class ImageCache {
         return bitmap;
     }
 
+    public final void preLoadImageAsIs(String urlString) throws IOException {
+        String fileName;
+
+        do {
+            fileName = generateFileName();
+        } while (new File(fileName).exists());
+
+        Log.d(TAG, "Load image to file " + fileName + " from URL " + urlString);
+
+        InputStream is = new BufferedInputStream(IOUtils.getInputStream(urlString, false));
+        try {
+            OutputStream out = new BufferedOutputStream(ctx.openFileOutput(fileName, Context.MODE_PRIVATE));
+            try {
+                IOUtils.copy(is, out);
+            } finally {
+                out.close();
+            }
+        } finally {
+            is.close();
+        }
+
+        readDB.storeInCache(urlString, fileName);
+    }
+
     public Bitmap loadBitmap(ImageUrl url) {
         if (url == null || url.getUrl() == null) {
             return null;
         }
 
-        WindowManager wm = (WindowManager) ctx.getSystemService(Context.WINDOW_SERVICE);
-        Display display = wm.getDefaultDisplay();
-
-        int targetSize = Math.max(display.getHeight(), display.getWidth());
+        String urlString = url.getUrl();
         Log.d(TAG, "Load image by url: " + url);
 
         Bitmap bitmap = null;
@@ -182,7 +205,7 @@ public class ImageCache {
             int sampleSize = 1;
             do {
                 try {
-                    bitmap = IOUtils.loadImage(url.getUrl(), sampleSize);
+                    bitmap = IOUtils.loadImage(urlString, sampleSize);
 
                     if (bitmap == null) {
                         Log.w(TAG, "Can't decode image by url [" + url + "].");
@@ -207,27 +230,26 @@ public class ImageCache {
                     bitmap = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
                 }
 
+                int height = bitmap.getHeight();
+                int width = bitmap.getWidth();
+
+                if (height > maximumSize && width > maximumSize) {
+                    bitmap = UIUtils.scaleBitmap(bitmap, maximumSize);
+                }
 
                 do {
                     fileName = generateFileName();
                 } while (new File(fileName).exists());
 
-                Log.d(TAG, "Save image to file " + fileName + ". Url: " + url);
-
-                int height = bitmap.getHeight();
-                int width = bitmap.getWidth();
-
-                if (height > targetSize && width > targetSize) {
-                    bitmap = UIUtils.scaleBitmap(bitmap, targetSize);
-                }
+                Log.d(TAG, "Save image to file " + fileName + ". Url: " + urlString);
 
                 storeToFile(fileName, bitmap);
 
-                readDB.storeInCache(url.getUrl(), fileName);
+                readDB.storeInCache(urlString, fileName);
 
                 try {
                     lock.writeLock().lock();
-                    cacheImages.put(url.getUrl(), bitmap);
+                    cacheImages.put(urlString, bitmap);
                 } finally {
                     lock.writeLock().unlock();
                 }
@@ -241,7 +263,7 @@ public class ImageCache {
         return bitmap;
     }
 
-    private String generateFileName() {
+    private static String generateFileName() {
         return UUID.randomUUID().toString().replaceAll("-", "") + ".png";
     }
 
