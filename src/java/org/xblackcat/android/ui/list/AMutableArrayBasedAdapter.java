@@ -1,8 +1,6 @@
 package org.xblackcat.android.ui.list;
 
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,11 +12,12 @@ import java.util.List;
  *
  * @author xBlackCat
  */
-public abstract class AMutableArrayBasedAdapter<T, V extends View & IItemSettable<T>> extends BaseAdapter {
+public abstract class AMutableArrayBasedAdapter<T, V extends View & IItemSettable<T>> extends ABaseAdapter<T, V> {
     protected final List<T> items;
 
     @SuppressWarnings("unchecked")
     public AMutableArrayBasedAdapter(T... items) {
+        super(null, null);
         this.items = new ArrayList<>(Arrays.asList(items));
     }
 
@@ -40,29 +39,4 @@ public abstract class AMutableArrayBasedAdapter<T, V extends View & IItemSettabl
     public List<T> getItems() {
         return Collections.unmodifiableList(items);
     }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        V view = null;
-        if (convertView instanceof IItemSettable) {
-            try {
-                view = (V) convertView;
-            } catch (ClassCastException e) {
-                view = null;
-            }
-        }
-
-        if (view == null) {
-            view = buildView(position, parent);
-
-            assert view != null;
-        }
-
-        view.setItem(position, getItem(position));
-        view.setEnabled(isEnabled(position));
-        return view;
-    }
-
-    protected abstract V buildView(int position, ViewGroup parent);
 }

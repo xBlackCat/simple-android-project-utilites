@@ -53,6 +53,7 @@ public class Remain {
         return milliseconds;
     }
 
+    @SuppressWarnings("RedundantIfStatement")
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

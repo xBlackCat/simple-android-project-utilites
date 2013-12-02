@@ -30,22 +30,32 @@ public class ImageUrl implements Serializable {
         return density;
     }
 
+    @SuppressWarnings({"SimplifiableIfStatement", "RedundantIfStatement"})
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof ImageUrl)) {
+            return false;
+        }
 
         ImageUrl imageUrl = (ImageUrl) o;
 
-        if (density != imageUrl.density) return false;
-        if (!url.equals(imageUrl.url)) return false;
+        if (density != imageUrl.density) {
+            return false;
+        }
+
+        if (url != null ? !url.equals(imageUrl.url) : imageUrl.url != null) {
+            return false;
+        }
 
         return true;
     }
 
     @Override
     public int hashCode() {
-        int result = url.hashCode();
+        int result = url != null ? url.hashCode() : 0;
         result = 31 * result + (density != null ? density.hashCode() : 0);
         return result;
     }

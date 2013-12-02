@@ -1,18 +1,14 @@
 package org.xblackcat.android.ui.list;
 
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 
 /**
  * 23.07.12 16:52
  *
  * @author xBlackCat
  */
-public abstract class AnArrayBasedAdapter<T, V extends View & IItemSettable<T>> extends BaseAdapter {
+public abstract class AnArrayBasedAdapter<T, V extends View & IItemSettable<T>> extends ABaseAdapter<T,V> {
     protected final T[] items;
-    private final Integer rowBackground;
-    private final Integer oddRowBackground;
 
     @SuppressWarnings("unchecked")
     protected AnArrayBasedAdapter(T... items) {
@@ -30,9 +26,8 @@ public abstract class AnArrayBasedAdapter<T, V extends View & IItemSettable<T>> 
     }
 
     private AnArrayBasedAdapter(T[] items, Integer cell_bg_light, Integer cell_bg_dark) {
+        super(cell_bg_dark, cell_bg_light);
         this.items = items;
-        rowBackground = cell_bg_light;
-        oddRowBackground = cell_bg_dark;
     }
 
     @Override
@@ -45,43 +40,8 @@ public abstract class AnArrayBasedAdapter<T, V extends View & IItemSettable<T>> 
         return items[i];
     }
 
-    @Override
-    public long getItemId(int i) {
-        return i;
-    }
-
     public T[] getItems() {
         return items;
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public final View getView(int position, View convertView, ViewGroup parent) {
-        V view = null;
-        if (convertView != null && convertView instanceof IItemSettable) {
-            try {
-                view = (V) convertView;
-            } catch (ClassCastException e) {
-                view = null;
-            }
-        }
-
-        if (view == null) {
-            view = buildView(position, parent);
-        }
-
-        if (rowBackground != null) {
-            if (oddRowBackground == null) {
-                view.setBackgroundResource(rowBackground);
-            } else {
-                view.setBackgroundResource((position % 2 == 0) ? rowBackground : oddRowBackground);
-            }
-        }
-
-        view.setItem(position, getItem(position));
-        view.setEnabled(isEnabled(position));
-        return view;
-    }
-
-    protected abstract V buildView(int position, ViewGroup parent);
 }
