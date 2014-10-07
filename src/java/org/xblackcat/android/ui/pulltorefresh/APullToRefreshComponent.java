@@ -98,7 +98,7 @@ public abstract class APullToRefreshComponent<C extends View> extends LinearLayo
 
     protected abstract void setRefreshingImpl();
 
-    public boolean isListViewShown() {
+    public boolean isViewShown() {
         return view.isShown();
     }
 
@@ -214,13 +214,12 @@ public abstract class APullToRefreshComponent<C extends View> extends LinearLayo
     }
 
     private boolean onListViewTouch(View view, MotionEvent event) {
-
         switch (event.getAction()) {
             case MotionEvent.ACTION_MOVE:
                 updateEventStates(event);
 
                 if (isPullingDownToRefresh() && startY == -1) {
-                    startY = event.getY();
+                    startY = event.getRawY();
                     return false;
                 }
 
@@ -331,9 +330,8 @@ public abstract class APullToRefreshComponent<C extends View> extends LinearLayo
     private void updateEventStates(MotionEvent event) {
         System.arraycopy(lastYs, 1, lastYs, 0, EVENT_COUNT - 1);
 
-        float y = event.getY();
-        int top = view.getTop();
-        lastYs[EVENT_COUNT - 1] = y + top;
+        float y = event.getRawY();
+        lastYs[EVENT_COUNT - 1] = y;
     }
 
     private boolean isPullingDownToRefresh() {
