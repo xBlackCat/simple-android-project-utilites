@@ -231,18 +231,18 @@ public class InfiniteGallery extends Gallery {
         }
 
         protected int adjust(int position) {
-            final int amount = adapter.getCount();
-            if (amount <= 0) {
+            final int realAmount = adapter.getCount();
+            if (realAmount <= 0) {
                 return -1;
             }
 
-            if (position >= shift && position < (shift + amount)) {
+            if (position >= shift && position < (shift + realAmount)) {
                 return position;
             }
 
-            int realPos = (position % amount) - (shift % amount);
+            int realPos = (position % realAmount) - (shift % realAmount);
             if (realPos < 0) {
-                realPos += amount;
+                realPos += realAmount;
             }
 
             return realPos + shift;
@@ -253,7 +253,7 @@ public class InfiniteGallery extends Gallery {
                 return -1;
             } else {
                 final int realAmount = adapter.getCount();
-                if (amount <= 0) {
+                if (realAmount <= 0) {
                     return -1;
                 }
 
